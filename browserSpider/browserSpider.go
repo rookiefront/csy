@@ -56,13 +56,14 @@ func New(init BrowserHandleInit) BrowserHandle {
 		//chromedp.Flag("incognito", true),
 		chromedp.Flag("window-size", "1380,900"),
 		chromedp.UserDataDir(dir),
-		//chromedp.Flag("disable-infobars", true),
-		//chromedp.Flag("disable-infobars", true),
-		//chromedp.Flag("excludeSwitches", `['enable-automation']`),
+		chromedp.Flag("disable-infobars", true),
+		chromedp.Flag("excludeSwitches", `['enable-automation','foo']`),
 		//chromedp.Flag("useAutomationExtension", `False`),
 		chromedp.Flag("enable-automation", false),
 		chromedp.Flag("remote-debugging-port", "9222"),
 		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+		chromedp.Flag("enable-blink-features", "IdleDetection"),
+	//--enable-blink-features=IdleDetection
 	)
 	opts = append(opts, chromedp.ExecPath(GetBrowserExe()))
 
@@ -93,6 +94,7 @@ func GetBrowserExe() string {
 		`C:\Users\Administrator\Desktop\chrome\Chrome-bin\chrome.exe`,
 		`C:\Users\Administrator\Desktop\chrome-win\chrome.exe`,
 		`C:\Users\Administrator\AppData\Local\Google\Chrome\Application\chrome.exe`,
+		`C:\Users\Administrator\AppData\Local\Google\Chrome\Bin\chrome.exe`,
 		`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
 		`C:\Program Files\Google\Chrome\Application\chrome.exe`,
 	}

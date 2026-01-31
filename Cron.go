@@ -62,14 +62,14 @@ func (c *Cron[T]) ParseTimeToExpression(t time.Time) string {
 }
 
 // AddTimeTask 添加时间任务
-func (c *Cron[T]) AddTimeTask(t time.Time, f func(), meta T) error {
+func (c *Cron[T]) AddTimeTask(t time.Time, meta T, f func()) error {
 	expression := c.ParseTimeToExpression(t)
 	// 这里 meta 可以用于日志记录或者预处理，但不存入 TaskMap
-	return c.AddExpressionTask(expression, f, meta)
+	return c.AddExpressionTask(expression, meta, f)
 }
 
 // AddExpressionTask 添加时间任务
-func (c *Cron[T]) AddExpressionTask(expression string, f func(), meta T) error {
+func (c *Cron[T]) AddExpressionTask(expression string, meta T, f func()) error {
 	id, err := c.C.AddFunc(expression, f)
 	if err == nil {
 		c.mu.Lock()

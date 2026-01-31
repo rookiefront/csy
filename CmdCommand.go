@@ -178,7 +178,7 @@ func (c *Cmd) Run(inputCmd []string) (string, error) {
 	wg.Wait()
 	err = cmd.Wait()
 	if err != nil {
-		return "", err
+		return c.StderrText, err
 	}
-	return "", nil
+	return c.StdoutText, nil
 }

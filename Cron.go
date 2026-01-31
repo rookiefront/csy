@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-type Cron struct {
+type Cron[T any] struct {
 	C       *cron.Cron
 	TaskMap map[cron.EntryID]string
+	MetaMap map[cron.EntryID]T
 	mu      sync.RWMutex // 读写锁
+
 }
 type CronEntries struct {
 	cron.Entry
@@ -19,8 +21,8 @@ type CronEntries struct {
 }
 
 // NewCron 创建计划任务
-func NewCron() *Cron {
-	c := Cron{
+func NewCron[T any]() *Cron[T] {
+	c := Cron[T]{
 		TaskMap: map[cron.EntryID]string{},
 	}
 	// 日志输出
@@ -46,7 +48,7 @@ func NewCron() *Cron {
 	return &c
 }
 
-func (c Cron) ParseTimeToExpression(t time.Time) string {
+func (c *Cron[T]) ParseTimeToExpression(t time.Time) string {
 	// 注意：Cron 的周是从 0 (周日) 到 6 (周六)
 	// t.Weekday() 在 Go 中默认也是 0-6，所以可以直接转换
 	return fmt.Sprintf("%d %d %d %d %d %d",
@@ -60,24 +62,25 @@ func (c Cron) ParseTimeToExpression(t time.Time) string {
 }
 
 // AddTimeTask 添加时间任务
-func (c *Cron) AddTimeTask(t time.Time, f func()) (err error) {
+func (c *Cron[T]) AddTimeTask(t time.Time, f func(), meta T) error {
 	expression := c.ParseTimeToExpression(t)
-
-	return c.AddExpressionTask(expression, f)
+	// 这里 meta 可以用于日志记录或者预处理，但不存入 TaskMap
+	return c.AddExpressionTask(expression, f, meta)
 }
 
 // AddExpressionTask 添加时间任务
-func (c *Cron) AddExpressionTask(expression string, f func()) (err error) {
+func (c *Cron[T]) AddExpressionTask(expression string, f func(), meta T) error {
 	id, err := c.C.AddFunc(expression, f)
 	if err == nil {
 		c.mu.Lock()
 		c.TaskMap[id] = expression
+		c.MetaMap[id] = meta
 		c.mu.Unlock()
 	}
 	return err
 }
 
-func (c *Cron) GetTaskList() []CronEntries {
+func (c *Cron[T]) GetTaskList() []CronEntries {
 
 	entries := c.C.Entries()
 	list := make([]CronEntries, 0, len(entries))
@@ -92,7 +95,7 @@ func (c *Cron) GetTaskList() []CronEntries {
 	return list
 }
 
-func (c *Cron) RemoveTask(id cron.EntryID) {
+func (c *Cron[T]) RemoveTask(id cron.EntryID) {
 	c.C.Remove(id)
 	c.mu.Lock()
 	delete(c.TaskMap, id)

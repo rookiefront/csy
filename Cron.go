@@ -15,15 +15,17 @@ type Cron[T any] struct {
 	mu      sync.RWMutex // 读写锁
 
 }
-type CronEntries struct {
+type CronEntries[T any] struct {
 	cron.Entry
 	Expression string
+	Meta       T
 }
 
 // NewCron 创建计划任务
 func NewCron[T any]() *Cron[T] {
 	c := Cron[T]{
 		TaskMap: map[cron.EntryID]string{},
+		MetaMap: map[cron.EntryID]T{},
 	}
 	// 日志输出
 	logger := log.New(log.Writer(), "[CRON] ", log.LstdFlags)
@@ -80,16 +82,17 @@ func (c *Cron[T]) AddExpressionTask(expression string, meta T, f func()) error {
 	return err
 }
 
-func (c *Cron[T]) GetTaskList() []CronEntries {
+func (c *Cron[T]) GetTaskList() []CronEntries[T] {
 
 	entries := c.C.Entries()
-	list := make([]CronEntries, 0, len(entries))
+	list := make([]CronEntries[T], 0, len(entries))
 
 	for _, entry := range entries {
 		exp := c.TaskMap[entry.ID]
-		list = append(list, CronEntries{
+		list = append(list, CronEntries[T]{
 			Entry:      entry,
 			Expression: exp,
+			Meta:       c.MetaMap[entry.ID],
 		})
 	}
 	return list

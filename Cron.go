@@ -2,10 +2,12 @@ package csy
 
 import (
 	"fmt"
-	"github.com/robfig/cron/v3"
 	"log"
+	"sort"
 	"sync"
 	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
 type Cron[T any] struct {
@@ -19,6 +21,7 @@ type CronEntries[T any] struct {
 	cron.Entry
 	Expression string
 	Meta       T
+	Countdown  string
 }
 
 // NewCron 创建计划任务
@@ -89,12 +92,20 @@ func (c *Cron[T]) GetTaskList() []CronEntries[T] {
 
 	for _, entry := range entries {
 		exp := c.TaskMap[entry.ID]
+		duration := entry.Next.Sub(time.Now())
+		countdownStr := duration.Truncate(time.Second).String()
 		list = append(list, CronEntries[T]{
 			Entry:      entry,
 			Expression: exp,
 			Meta:       c.MetaMap[entry.ID],
+			Countdown:  countdownStr,
 		})
 	}
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Entry.Next.Before(list[j].Entry.Next)
+	})
+
 	return list
 }
 

@@ -27,6 +27,7 @@ func (c *BasicContext) SendJsonToastOk(data ...interface{}) {
 		outputData = data[1]
 	}
 	c.JSON(200, gin.H{
+		"toast": true,
 		"msg":   message,
 		"code":  200,
 		"data":  outputData,

@@ -18,11 +18,18 @@ type ResultJSON struct {
 	Data interface{} `json:"data"`
 }
 
-func (c *BasicContext) SendJsonToastOk(message string) {
+func (c *BasicContext) SendJsonToastOk(data ...interface{}) {
+	var message, outputData interface{}
+	if len(data) >= 1 {
+		message = data[0]
+	}
+	if len(data) >= 2 {
+		outputData = data[1]
+	}
 	c.JSON(200, gin.H{
-		"msg":   "ok",
+		"msg":   message,
 		"code":  200,
-		"data":  message,
+		"data":  outputData,
 		"where": c.GetReqData(),
 	})
 }

@@ -1,4 +1,4 @@
-package request
+package req
 
 import (
 	"bytes"
@@ -7,7 +7,14 @@ import (
 	"net/http"
 )
 
-func PostByJson(reqUrl string, jsonData any, headers map[string]string) (responBytes []byte, err error) {
+type Request struct {
+}
+
+func NewRequest() *Request {
+	return &Request{}
+}
+
+func (*Request) PostByJson(reqUrl string, jsonData any, headers map[string]string) (responBytes []byte, err error) {
 	jsonDataMar, err := json.Marshal(jsonData)
 	if err != nil {
 		return responBytes, err

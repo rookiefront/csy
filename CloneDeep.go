@@ -3,7 +3,8 @@ package csy
 import (
 	"bytes"
 	"encoding/gob"
-	"github.com/front-ck996/csy/deepcopy"
+
+	"github.com/front-ck996/csy/0_extend/deepcopy"
 )
 
 func CloneDeep[T any](dst T, src interface{}) error {

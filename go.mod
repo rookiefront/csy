@@ -15,6 +15,7 @@ require (
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/thedevsaddam/gojsonq/v2 v2.5.2
 	go.etcd.io/bbolt v1.3.7
+	golang.org/x/net v0.10.0
 	golang.org/x/text v0.9.0
 )
 
@@ -49,7 +50,6 @@ require (
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
-	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

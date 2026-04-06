@@ -2,6 +2,7 @@ package file
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"

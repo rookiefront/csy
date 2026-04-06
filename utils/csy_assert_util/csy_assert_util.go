@@ -89,9 +89,13 @@ func Len(obj interface{}, length int) bool {
 	return false
 }
 
-// Error 断言错误不为 nil，返回是否通过
-func Error(err error) bool {
+// HasError 断言错误不为 nil（err != nil）
+func HasError(err error) bool {
 	return err != nil
+}
+func IsError(v interface{}) bool {
+	_, ok := v.(error)
+	return ok
 }
 
 // NoError 断言错误为 nil，返回是否通过

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/front-ck996/csy"
+	"github.com/front-ck996/csy/utils/csy_assert_util"
 	"github.com/gin-gonic/gin"
 )
 
@@ -64,7 +64,7 @@ func (c *BasicContext) SendJsonOkWs(data ...interface{}) []byte {
 }
 
 func (c *BasicContext) SendJsonErr(err any) {
-	if csy.IsError(err) && err != nil {
+	if csy_assert_util.IsError(err) && err != nil {
 		err = err.(error).Error()
 	}
 	c.JSON(200, gin.H{
@@ -76,7 +76,7 @@ func (c *BasicContext) SendJsonErr(err any) {
 }
 
 func (c *BasicContext) SendJsonErrWs(err any) []byte {
-	if csy.IsError(err) && err != nil {
+	if csy_assert_util.IsError(err) && err != nil {
 		err = err.(error).Error()
 	}
 	marshal, _ := json.Marshal(gin.H{
@@ -89,7 +89,7 @@ func (c *BasicContext) SendJsonErrWs(err any) []byte {
 }
 
 func (c *BasicContext) SendJsonErrCode(err any, code any) {
-	if csy.IsError(err) && err != nil {
+	if csy_assert_util.IsError(err) && err != nil {
 		err = err.(error).Error()
 	}
 	c.JSON(200, gin.H{

@@ -1,4 +1,4 @@
-package csy
+package csy_runtime_util
 
 import (
 	"testing"

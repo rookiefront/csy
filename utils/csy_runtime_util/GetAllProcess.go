@@ -1,8 +1,6 @@
-package csy
+package csy_runtime_util
 
-import (
-	"github.com/shirou/gopsutil/process"
-)
+import "github.com/shirou/gopsutil/process"
 
 type ProcessInfo struct {
 	Exe    string

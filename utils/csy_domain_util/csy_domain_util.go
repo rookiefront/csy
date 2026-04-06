@@ -1,4 +1,4 @@
-package csy
+package csy_domain_util
 
 import (
 	"regexp"

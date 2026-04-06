@@ -1,4 +1,4 @@
-package csy
+package csy_art_util
 
 import (
 	"bufio"

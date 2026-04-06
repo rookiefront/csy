@@ -1,4 +1,4 @@
-package csy
+package csy_device_util
 
 import (
 	"fmt"

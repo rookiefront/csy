@@ -3,13 +3,15 @@ package csy
 import (
 	"bufio"
 	"fmt"
-	"github.com/saintfish/chardet"
 	"io"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/front-ck996/csy/utils/csy_charset_util"
+	"github.com/saintfish/chardet"
 )
 
 // Cmd 封装常用的操作系统命令的函数
@@ -45,7 +47,7 @@ func (c *Cmd) convCharset(text string) string {
 		return text
 	}
 	if c.isWindows() {
-		utf8, _ := GbkToUtf8([]byte(text))
+		utf8, _ := csy_charset_util.GbkToUtf8([]byte(text))
 		return string(utf8)
 	}
 	return text

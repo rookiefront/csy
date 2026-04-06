@@ -1,4 +1,4 @@
-package csy
+package file
 
 import (
 	"archive/zip"

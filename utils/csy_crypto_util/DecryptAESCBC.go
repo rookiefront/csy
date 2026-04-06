@@ -1,4 +1,4 @@
-package easy_crypto
+package csy_crypto_util
 
 import (
 	"crypto/aes"

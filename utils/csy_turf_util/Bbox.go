@@ -1,4 +1,4 @@
-package turf
+package csy_turf_util
 
 import "math"
 

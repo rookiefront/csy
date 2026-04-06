@@ -1,10 +1,18 @@
-package csy
+package csy_slice_util
 
 import (
 	"math"
 	"reflect"
 )
 
+func SliceInclude[T any](src []T, target T) bool {
+	for _, element := range src {
+		if reflect.DeepEqual(target, element) {
+			return true
+		}
+	}
+	return false
+}
 func SliceUnique[T any](arr []T) (newArr []T) {
 	newArr = make([]T, 0)
 	for i := 0; i < len(arr); i++ {

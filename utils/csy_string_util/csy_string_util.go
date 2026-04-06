@@ -1,4 +1,4 @@
-package csy
+package csy_string_util
 
 import (
 	"regexp"

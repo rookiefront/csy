@@ -35,7 +35,7 @@ func (s *ProxyService) GetResponseBody(res *http.Response) ([]byte, error) {
 	return body, err
 }
 
-// WriteResponseBody 获取响应头数据
+// WriteResponseBody 写入响应数据
 func (s *ProxyService) WriteResponseBody(res *http.Response, byte []byte) {
 	res.Body = io.NopCloser(bytes.NewBuffer(byte))
 	res.ContentLength = int64(len(byte))

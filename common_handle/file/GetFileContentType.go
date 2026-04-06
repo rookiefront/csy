@@ -1,11 +1,12 @@
-package csy
+package file
 
 import (
 	"net/http"
 	"os"
 )
 
-func GetFileContentType(filePath string) (string, error) {
+// 检测文件 content-type 类型
+func (f *FileHandle) FileDetectContentType(filePath string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", err

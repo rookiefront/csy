@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/front-ck996/csy"
+
+	"github.com/front-ck996/csy/common_handle/cmd"
 )
 
 func main() {
-	cmd := csy.Cmd{}
+	cmd := cmd.Cmd{}
 	cmd.StreamStderrCB = func(text string) {
 
 	}

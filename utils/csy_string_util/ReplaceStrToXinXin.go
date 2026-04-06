@@ -1,20 +1,4 @@
-package csy
-
-import (
-	"go/format"
-)
-
-func FormatCode(src []byte) ([]byte, error) {
-	got, err := format.Source(src)
-	if len(src) == 0 {
-		return src, nil
-	}
-	if len(got) == 0 {
-		return src, nil
-	}
-
-	return got, err
-}
+package csy_string_util
 
 // ReplaceStrToXinXin 字符串固定长度转 *
 func ReplaceStrToXinXin(str string, start, end int) (result string) {

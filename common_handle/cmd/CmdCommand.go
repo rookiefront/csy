@@ -1,4 +1,4 @@
-package csy
+package cmd
 
 import (
 	"bufio"

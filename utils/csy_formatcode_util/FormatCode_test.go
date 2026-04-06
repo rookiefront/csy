@@ -1,8 +1,10 @@
-package csy_test
+package csy_formatcode_util_test
 
 import (
 	"fmt"
-	"github.com/front-ck996/csy"
+
+	"github.com/front-ck996/csy/utils/csy_formatcode_util"
+
 	"testing"
 )
 
@@ -15,5 +17,5 @@ func f() {
 	}
 }
 `[1:])
-	fmt.Println(csy.FormatCode(in))
+	fmt.Println(csy_formatcode_util.FormatCode(in))
 }

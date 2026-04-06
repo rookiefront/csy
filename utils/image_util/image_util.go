@@ -29,5 +29,6 @@ func ToBase64Str(img image.Image) (string, error) {
 		return "", err
 	}
 	base64Str := base64.StdEncoding.EncodeToString(buf.Bytes())
-	return base64Str, nil
+	// 添加 Data URL 前缀
+	return "data:image/png;base64," + base64Str, nil
 }

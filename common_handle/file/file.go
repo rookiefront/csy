@@ -3,7 +3,10 @@ package file
 import (
 	"archive/zip"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"log"
 	"net/http"
@@ -13,6 +16,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/front-ck996/csy/utils/csy_image_util"
 )
 
 type FileHandle struct {
@@ -67,6 +72,39 @@ func (file *FileHandle) IsDir(filename string) (bool, error) {
 	}
 	fm := fd.Mode()
 	return fm.IsDir(), nil
+}
+
+// RemoveAll is_dir()
+func (file *FileHandle) RemoveAll(filePath string) error {
+	return os.RemoveAll(filePath)
+}
+
+// IsDir is_dir()
+func (f *FileHandle) MkdirAll0777(filePath string) error {
+	return os.MkdirAll(filePath, 0777)
+}
+
+func (f *FileHandle) ReadImageFileToBase64(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("读取文件失败: %w", err)
+	}
+
+	return csy_image_util.ByteToBase64Str(data)
+}
+
+// WriteImage is_dir()
+func (f *FileHandle) WriteImage(image *image.RGBA, fileName string) error {
+
+	file, err := os.Create(fileName)
+	if err != nil {
+		return errors.New(fmt.Sprintf("创建文件失败:%s", err.Error()))
+	}
+	defer file.Close()
+
+	err = png.Encode(file, image)
+
+	return nil
 }
 
 // ISIMG

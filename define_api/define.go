@@ -37,13 +37,19 @@ func (c *BasicContext) SendJsonToastOk(data ...interface{}) {
 
 func (c *BasicContext) SendJsonOk(data ...interface{}) {
 	var message interface{}
+	message = "ok"
+	var data2 interface{}
 	if len(data) >= 1 {
-		message = data[0]
+		data2 = data[0]
+	}
+	if len(data) >= 2 {
+		message = data[1]
+		data2 = data[0]
 	}
 	c.JSON(200, gin.H{
-		"msg":   "ok",
+		"msg":   message,
 		"code":  200,
-		"data":  message,
+		"data":  data2,
 		"where": c.GetReqData(),
 	})
 }

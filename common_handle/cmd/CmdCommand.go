@@ -67,6 +67,9 @@ func (c *Cmd) Close() error {
 	return c.Stdin.Close()
 }
 func (c *Cmd) Exit() {
+	if c.Origin == nil {
+		return
+	}
 	c.Stdin.Close()
 	c.Origin.Process.Kill()
 	//SIGINT 通常用于中断进程，

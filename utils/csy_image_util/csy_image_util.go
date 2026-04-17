@@ -34,6 +34,11 @@ func ToBase64Str(img image.Image) (string, error) {
 	// 添加 Data URL 前缀
 	return "data:image/png;base64," + base64Str, nil
 }
+func ByteToBase64Str(buf []byte) (string, error) {
+	base64Str := base64.StdEncoding.EncodeToString(buf)
+	// 添加 Data URL 前缀
+	return "data:image/png;base64," + base64Str, nil
+}
 
 func Base64toImage(base64Str string) (image.Image, error) {
 	base64Str = Base64RemoveFirstTag(base64Str)

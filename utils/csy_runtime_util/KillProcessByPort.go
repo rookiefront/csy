@@ -98,3 +98,74 @@ func IsProcessRunning(exeName string) bool {
 	// 如果不存在，tasklist 会输出 "信息: 没有运行带有指定标准的任务。"
 	return strings.Contains(string(output), exeName)
 }
+
+// ProcessInfo 进程信息结构体
+type PortProcessInfo struct {
+	PID            int
+	ExecutablePath string
+	ProcessName    string
+}
+
+// GetProcessInfoByPort 通过端口号获取进程详细信息
+func GetProcessInfoByPort(port int) (*PortProcessInfo, error) {
+	// 查找占用端口的进程 PID
+	cmd := exec.Command("netstat", "-ano")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("执行 netstat 失败: %w", err)
+	}
+
+	lines := strings.Split(string(output), "\n")
+	var pid int
+
+	for _, line := range lines {
+		if strings.Contains(line, fmt.Sprintf(":%d", port)) && strings.Contains(line, "LISTENING") {
+			fields := strings.Fields(line)
+			if len(fields) >= 5 {
+				pid, _ = strconv.Atoi(fields[4])
+				break
+			}
+		}
+	}
+
+	if pid == 0 {
+		return nil, fmt.Errorf("未找到占用端口 %d 的进程", port)
+	}
+
+	// 获取进程详细信息
+	info := &PortProcessInfo{PID: pid}
+
+	// 使用 wmic 获取可执行文件路径和名称
+	wmicCmd := exec.Command("wmic", "process", "where", "processid="+strconv.Itoa(pid), "get", "executablepath,name")
+	wmicOutput, err := wmicCmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("获取进程信息失败: %w", err)
+	}
+
+	lines = strings.Split(string(wmicOutput), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.Contains(strings.ToLower(line), "executablepath") {
+			continue
+		}
+
+		// 按空格分割，但路径可能包含空格，所以需要特殊处理
+		lastSpaceIndex := strings.LastIndex(line, " ")
+		if lastSpaceIndex > 0 {
+			info.ExecutablePath = strings.TrimSpace(line[:lastSpaceIndex])
+			info.ProcessName = strings.TrimSpace(line[lastSpaceIndex:])
+		} else {
+			info.ExecutablePath = line
+			// 从路径中提取文件名
+			parts := strings.Split(line, "\\")
+			info.ProcessName = parts[len(parts)-1]
+		}
+		break
+	}
+
+	if info.ExecutablePath == "" {
+		return nil, fmt.Errorf("未找到 PID %d 对应的进程信息", pid)
+	}
+
+	return info, nil
+}

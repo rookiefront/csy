@@ -3,13 +3,41 @@ package csy_image_util
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"image"
+	"image/jpeg"
 	"image/png"
+	"os"
 	"regexp"
 	"strings"
 
 	"github.com/disintegration/imaging"
+	"golang.org/x/image/draw"
 )
+
+func LoadImageToRGBA(filePath string) (*image.RGBA, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	img, _, err := image.Decode(file)
+	if err != nil {
+		return nil, err
+	}
+
+	// 尝试直接断言为 *image.RGBA
+	if rgba, ok := img.(*image.RGBA); ok {
+		return rgba, nil
+	}
+
+	// 如果不是 RGBA，则转换为 RGBA（例如 JPEG 解码后通常是 *image.YCbCr）
+	bounds := img.Bounds()
+	rgba := image.NewRGBA(bounds)
+	draw.Draw(rgba, bounds, img, bounds.Min, draw.Src)
+	return rgba, nil
+}
 
 func Resize(img *image.RGBA, width int) (resizedImg image.Image) {
 	if width > 0 {
@@ -84,4 +112,37 @@ func Base64RemoveFirstTag(base64Str string) string {
 	}
 
 	return base64Str
+}
+func ImageToBase64(img image.Image, format string, quality int) (string, error) {
+	var buf bytes.Buffer
+
+	switch format {
+	case "png":
+		err := png.Encode(&buf, img)
+		if err != nil {
+			return "", err
+		}
+	case "jpeg", "jpg":
+		err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
+		if err != nil {
+			return "", err
+		}
+	default:
+		return "", fmt.Errorf("unsupported format: %s", format)
+	}
+
+	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+}
+
+// ImageToDataURI 返回 data:image/...;base64,xxx 格式的字符串
+func ImageToDataURI(img image.Image, format string, quality int) (string, error) {
+	b64, err := ImageToBase64(img, format, quality)
+	if err != nil {
+		return "", err
+	}
+	mime := "image/" + format
+	if format == "jpg" {
+		mime = "image/jpeg"
+	}
+	return "data:" + mime + ";base64," + b64, nil
 }

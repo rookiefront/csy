@@ -2,9 +2,10 @@ package store
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/front-ck996/csy"
 	bolt "go.etcd.io/bbolt"
-	"sync"
 )
 
 type Store struct {
@@ -26,8 +27,8 @@ func init() {
 	dbs = map[string]Store{}
 }
 
-// GetStore 获取存储对象
-func GetStore(init StoreInit) (Store, error) {
+// NewStore 获取存储对象
+func NewStore(init StoreInit) (Store, error) {
 	if _, ok := dbs[init.DbName]; !ok {
 		if init.DbDir == "" {
 			init.DbDir = "_dbs/"

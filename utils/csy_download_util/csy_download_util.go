@@ -63,11 +63,53 @@ func errorf(format string, v ...interface{}) {
 	}
 }
 
+// ProgressStore 进度存储接口，外部实体实现 Get/Set 方法
+type ProgressStore interface {
+	Get() (int64, error)   // 获取已下载字节数
+	Set(downloaded int64) error // 保存已下载字节数
+}
+
+// FileProgressStore 基于文件的进度存储（默认实现，兼容原有行为）
+type FileProgressStore struct {
+	progressFile string
+}
+
+// NewFileProgressStore 创建文件进度存储器
+func NewFileProgressStore(progressFile string) *FileProgressStore {
+	return &FileProgressStore{progressFile: progressFile}
+}
+
+// Get 从文件读取已下载字节数
+func (f *FileProgressStore) Get() (int64, error) {
+	data, err := os.ReadFile(f.progressFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil // 首次下载，没有进度文件
+		}
+		return 0, err
+	}
+	var downloaded int64
+	_, err = fmt.Sscanf(string(data), "%d", &downloaded)
+	if err != nil {
+		// 文件损坏，从0开始
+		return 0, nil
+	}
+	return downloaded, nil
+}
+
+// Set 将已下载字节数写入文件
+func (f *FileProgressStore) Set(downloaded int64) error {
+	if err := os.MkdirAll(filepath.Dir(f.progressFile), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(f.progressFile, []byte(fmt.Sprintf("%d", downloaded)), 0644)
+}
+
 // BlockDownloader 按固定块大小下载，支持断点续传和自动重连
 type BlockDownloader struct {
 	url          string        // 下载 URL
 	destFile     string        // 目标文件路径
-	progressFile string        // 进度文件路径（记录已下载字节数）
+	progressStore ProgressStore // 进度存储器（接口）
 	blockSize    int64         // 每次请求的块大小（字节）
 	taskName     string        // 任务名称，用于日志区分
 	retryCount   int           // 每个块请求失败时的重试次数
@@ -78,16 +120,17 @@ type BlockDownloader struct {
 	downloaded int64
 }
 
-// NewBlockDownloader 创建下载器，默认重试 3 次，间隔 2 秒
-func NewBlockDownloader(url, destFile, progressFile string, blockSize int64) *BlockDownloader {
+// NewBlockDownloader 创建下载器，需要传入进度存储器（实体）
+// 如果希望继续使用文件存储，可以传入 NewFileProgressStore(progressFile)
+func NewBlockDownloader(url, destFile string, blockSize int64, store ProgressStore) *BlockDownloader {
 	return &BlockDownloader{
-		url:          url,
-		destFile:     destFile,
-		progressFile: progressFile,
-		blockSize:    blockSize,
-		taskName:     filepath.Base(destFile),
-		retryCount:   3,
-		retryDelay:   2 * time.Second,
+		url:           url,
+		destFile:      destFile,
+		progressStore: store,
+		blockSize:     blockSize,
+		taskName:      filepath.Base(destFile),
+		retryCount:    3,
+		retryDelay:    2 * time.Second,
 		client: &http.Client{
 			Timeout: 60 * time.Second,
 		},
@@ -137,38 +180,19 @@ func (d *BlockDownloader) getFileSize() error {
 	return nil
 }
 
-// loadProgress 从文件加载已下载字节数
+// loadProgress 通过存储器加载已下载字节数
 func (d *BlockDownloader) loadProgress() error {
-	f, err := os.Open(d.progressFile)
+	downloaded, err := d.progressStore.Get()
 	if err != nil {
-		if os.IsNotExist(err) {
-			d.downloaded = 0
-			return nil
-		}
 		return err
 	}
-	defer f.Close()
-	_, err = fmt.Fscanf(f, "%d", &d.downloaded)
-	if err != nil {
-		// 进度文件损坏，从0开始
-		d.downloaded = 0
-	}
+	d.downloaded = downloaded
 	return nil
 }
 
-// saveProgress 保存已下载字节数
+// saveProgress 通过存储器保存已下载字节数
 func (d *BlockDownloader) saveProgress() error {
-	// 确保目录存在
-	if err := os.MkdirAll(filepath.Dir(d.progressFile), 0755); err != nil {
-		return err
-	}
-	f, err := os.Create(d.progressFile)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = fmt.Fprintf(f, "%d", d.downloaded)
-	return err
+	return d.progressStore.Set(d.downloaded)
 }
 
 // downloadBlock 下载一个块（支持重试）
@@ -273,9 +297,9 @@ func (d *BlockDownloader) Download(ctx context.Context) error {
 	}
 	infof("[%s] 文件总大小: %d bytes", d.taskName, d.fileSize)
 
-	// 2. 加载已下载进度
+	// 2. 加载已下载进度（通过实体）
 	if err := d.loadProgress(); err != nil {
-		return err
+		return fmt.Errorf("加载进度失败: %w", err)
 	}
 	infof("[%s] 已下载: %d bytes, 续传起点: %d", d.taskName, d.downloaded, d.downloaded)
 
@@ -319,7 +343,7 @@ func (d *BlockDownloader) Download(ctx context.Context) error {
 		current = end + 1
 		d.downloaded = current
 
-		// 保存进度
+		// 保存进度（通过实体）
 		if err := d.saveProgress(); err != nil {
 			errorf("[%s] 保存进度失败: %v", d.taskName, err)
 		}
@@ -350,4 +374,13 @@ func SafeFileName(url string) string {
 		name = name[:idx]
 	}
 	return name
+}
+// GetFileSize 获取文件总大小（下载前调用）
+func (d *BlockDownloader) GetFileSize() (int64, error) {
+	if d.fileSize == 0 {
+		if err := d.getFileSize(); err != nil {
+			return 0, err
+		}
+	}
+	return d.fileSize, nil
 }

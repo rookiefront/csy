@@ -1,4 +1,4 @@
-package csy_string_util
+package csy_number_util
 
 import (
 	"math/rand"

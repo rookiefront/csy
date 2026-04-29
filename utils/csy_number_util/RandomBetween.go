@@ -1,6 +1,7 @@
 package csy_number_util
 
 import (
+	"math"
 	"math/rand"
 	"time"
 )
@@ -17,4 +18,18 @@ func RandomFloatBetween(min, max float64) float64 {
 		return min // 处理无效区间，或根据需求返回错误
 	}
 	return min + rand.Float64()*(max-min)
+}
+func RandomFloatBetweenWithPrecision(min, max float64, prec int) float64 {
+	if min >= max {
+		return min
+	}
+	if prec < 0 {
+		prec = 0
+	}
+	// 生成原始随机数
+	val := min + rand.Float64()*(max-min)
+	// 按精度四舍五入
+	factor := math.Pow10(prec)
+	rounded := math.Round(val*factor) / factor
+	return rounded
 }

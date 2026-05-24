@@ -24,6 +24,7 @@ type ProxyService struct {
 	startTime         time.Time    // 添加启动时间
 	BeforeStartEngine func(*gin.Engine)
 	InterceptResponse func(res *http.Response) error
+	ReverseProxy      *httputil.ReverseProxy
 }
 
 func NewProxyService(address string, port int) *ProxyService {
@@ -70,7 +71,7 @@ func (s *ProxyService) initServer() error {
 		return err
 	}
 	reverseProxy := httputil.NewSingleHostReverseProxy(targetProxyURL)
-
+	s.ReverseProxy = reverseProxy
 	originalDirector := reverseProxy.Director
 
 	reverseProxy.Director = func(req *http.Request) {

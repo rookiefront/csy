@@ -1,8 +1,10 @@
 package gin_middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CorsConfig 跨域配置结构体
@@ -33,6 +35,100 @@ func DefaultCorsConfig() *CorsConfig {
 	}
 }
 
+// corsWriter 自定义 ResponseWriter，用于拦截并覆盖下游的跨域 Header
+type corsWriter struct {
+	gin.ResponseWriter
+	cfg    *CorsConfig
+	origin string
+}
+
+// overrideHeaders 核心逻辑：清空代理方产生的冲突头，并设置中间件的配置头
+func (w *corsWriter) overrideHeaders() {
+	h := w.Header()
+
+	// 1. 删除下游（被代理方）可能设置的跨域 Header
+	h.Del("Access-Control-Allow-Origin")
+	h.Del("Access-Control-Allow-Headers")
+	h.Del("Access-Control-Allow-Methods")
+	h.Del("Access-Control-Expose-Headers")
+	h.Del("Access-Control-Allow-Credentials")
+	h.Del("Access-Control-Max-Age")
+
+	// 2. 重新按照我们的配置设置跨域 Header
+	if w.cfg.AllowOrigins != "" {
+		h.Set("Access-Control-Allow-Origin", w.cfg.AllowOrigins)
+	} else {
+		// 如果未指定允许的域名，则使用请求中的Origin
+		if w.origin != "" {
+			h.Set("Access-Control-Allow-Origin", w.origin)
+		} else {
+			// 如果没有Origin头，可以设置为*或保持为空
+			h.Set("Access-Control-Allow-Origin", "*")
+		}
+	}
+
+	if w.cfg.AllowHeaders != "" {
+		h.Set("Access-Control-Allow-Headers", w.cfg.AllowHeaders)
+	}
+
+	if w.cfg.AllowMethods != "" {
+		h.Set("Access-Control-Allow-Methods", w.cfg.AllowMethods)
+	}
+
+	if w.cfg.ExposeHeaders != "" {
+		h.Set("Access-Control-Expose-Headers", w.cfg.ExposeHeaders)
+	}
+
+	if w.cfg.AllowCredentials {
+		h.Set("Access-Control-Allow-Credentials", "true")
+	}
+
+	if w.cfg.MaxAge > 0 {
+		// 【已修复】原来使用 string(rune(cfg.MaxAge)) 是错误的，会转换成乱码字符
+		h.Set("Access-Control-Max-Age", strconv.Itoa(w.cfg.MaxAge))
+	}
+}
+
+// WriteHeader 拦截 Header 写入
+func (w *corsWriter) WriteHeader(code int) {
+	if !w.Written() {
+		w.overrideHeaders()
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
+// WriteHeaderNow 拦截立即 Header 写入
+func (w *corsWriter) WriteHeaderNow() {
+	if !w.Written() {
+		w.overrideHeaders()
+	}
+	w.ResponseWriter.WriteHeaderNow()
+}
+
+// Write 拦截 Body 写入（隐式触发 Header 写入）
+func (w *corsWriter) Write(b []byte) (int, error) {
+	if !w.Written() {
+		w.overrideHeaders()
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+// WriteString 拦截 String 写入
+func (w *corsWriter) WriteString(s string) (int, error) {
+	if !w.Written() {
+		w.overrideHeaders()
+	}
+	return w.ResponseWriter.WriteString(s)
+}
+
+// Flush 拦截 Flush 操作（对于流式返回和反向代理非常关键）
+func (w *corsWriter) Flush() {
+	if !w.Written() {
+		w.overrideHeaders()
+	}
+	w.ResponseWriter.Flush()
+}
+
 // Cors 跨域请求中间件，支持两种调用方式：
 // 1. 不带参数: router.Use(Cors())
 // 2. 带配置参数: router.Use(Cors(config))
@@ -50,48 +146,24 @@ func Cors(config ...*CorsConfig) gin.HandlerFunc {
 		method := c.Request.Method
 		origin := c.Request.Header.Get("Origin")
 
-		// 设置Access-Control-Allow-Origin
-		if cfg.AllowOrigins != "" {
-			c.Header("Access-Control-Allow-Origin", cfg.AllowOrigins)
-		} else {
-			// 如果未指定允许的域名，则使用请求中的Origin
-			if origin != "" {
-				c.Header("Access-Control-Allow-Origin", origin)
-			} else {
-				// 如果没有Origin头，可以设置为*或保持为空
-				c.Header("Access-Control-Allow-Origin", "*")
-			}
-		}
-
-		// 设置其他CORS头部
-		if cfg.AllowHeaders != "" {
-			c.Header("Access-Control-Allow-Headers", cfg.AllowHeaders)
-		}
-
-		if cfg.AllowMethods != "" {
-			c.Header("Access-Control-Allow-Methods", cfg.AllowMethods)
-		}
-
-		if cfg.ExposeHeaders != "" {
-			c.Header("Access-Control-Expose-Headers", cfg.ExposeHeaders)
-		}
-
-		if cfg.AllowCredentials {
-			c.Header("Access-Control-Allow-Credentials", "true")
-		}
-
-		// 设置预检请求缓存时间
-		if cfg.MaxAge > 0 {
-			c.Header("Access-Control-Max-Age", string(rune(cfg.MaxAge)))
-		}
-
-		// 放行所有OPTIONS方法
+		// 1. 如果是 OPTIONS 请求，直接拦截并返回
 		if method == "OPTIONS" {
+			// 直接用 corsWriter 设置并立刻结束
+			cw := &corsWriter{ResponseWriter: c.Writer, cfg: cfg, origin: origin}
+			cw.overrideHeaders()
 			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 
-		// 处理请求
+		// 2. 对于正常请求，将 c.Writer 包装为自定义的 corsWriter
+		// 以便在反向代理或后续 Handler 写入数据时拦截 Header
+		c.Writer = &corsWriter{
+			ResponseWriter: c.Writer,
+			cfg:            cfg,
+			origin:         origin,
+		}
+
+		// 处理下游请求
 		c.Next()
 	}
 }

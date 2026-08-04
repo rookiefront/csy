@@ -40,4 +40,7 @@ func (s *ProxyService) WriteResponseBody(res *http.Response, byte []byte) {
 	res.Body = io.NopCloser(bytes.NewBuffer(byte))
 	res.ContentLength = int64(len(byte))
 	res.Header.Set("Content-Length", strconv.Itoa(len(byte)))
+	res.Header.Del("Content-Encoding")
+	res.Header.Del("Transfer-Encoding")
+	res.Header.Del("Etag")
 }

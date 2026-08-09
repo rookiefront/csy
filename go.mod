@@ -9,12 +9,14 @@ require (
 	github.com/chromedp/chromedp v0.9.3
 	github.com/disintegration/imaging v1.6.2
 	github.com/gin-gonic/gin v1.9.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/json-iterator/go v1.1.12
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/thedevsaddam/gojsonq/v2 v2.5.2
 	go.etcd.io/bbolt v1.3.7
+	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8
 	golang.org/x/net v0.10.0
 	golang.org/x/text v0.9.0
 )
@@ -49,7 +51,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -24,9 +24,12 @@ type ProxyService struct {
 	startTime         time.Time    // 添加启动时间
 	BeforeStartEngine func(*gin.Engine)
 	InterceptResponse func(res *http.Response) error
+	InterceptRequest func(req *http.Request)
 	ReverseProxy      *httputil.ReverseProxy
 }
-
+/**
+ 不启动server 传入port: -1
+ */
 func NewProxyService(address string, port int) *ProxyService {
 	return &ProxyService{
 		Address:           address,
@@ -49,6 +52,9 @@ func (s *ProxyService) SetProxySocket(href string) {
 
 func (s *ProxyService) SetBeforeStartEngine(f func(*gin.Engine)) {
 	s.BeforeStartEngine = f
+}
+func (s *ProxyService) SetInterceptRequest(f func(*http.Request)) {
+	s.InterceptRequest = f
 }
 
 // initServer 初始化服务器
@@ -78,6 +84,7 @@ func (s *ProxyService) initServer() error {
 		// 保留原始的转发逻辑
 		originalDirector(req)
 		req.Host = targetProxyURL.Host
+		s.InterceptRequest(req)
 	}
 
 	engine.NoRoute(func(c *gin.Context) {
@@ -102,6 +109,9 @@ func (s *ProxyService) Start() error {
 	if err != nil {
 		return err
 	}
+	if s.Port == -1 {
+		return  nil
+	}
 
 	addr := fmt.Sprintf("%s:%d", s.Address, s.Port)
 	fmt.Printf("Proxy service started on %s\n", addr)
@@ -118,6 +128,9 @@ func (s *ProxyService) StartAsync() error {
 	err := s.initServer()
 	if err != nil {
 		return err
+	}
+	if s.Port == -1 {
+		return  nil
 	}
 
 	addr := fmt.Sprintf("%s:%d", s.Address, s.Port)

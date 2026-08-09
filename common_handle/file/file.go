@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/png"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -538,6 +539,56 @@ func (f2 *FileHandle) CopyDir(src string, dest string) error {
 	}
 
 	return nil
+}
+
+// ListFiles 列出目录 dir 下的文件和目录，根据 filter 筛选。
+// recursive 为可选参数，默认 false；若为 true 则递归遍历子目录。
+// 返回符合条件的文件/目录条目切片（类型为 os.DirEntry）。
+func (f *FileHandle) ListFiles(dir string, filter func(os.FileInfo) bool, recursive ...bool) ([]os.DirEntry, error) {
+	var result []os.DirEntry
+	rec := false
+	if len(recursive) > 0 {
+		rec = recursive[0]
+	}
+
+	if !rec {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return nil, err
+		}
+		for _, entry := range entries {
+			info, err := entry.Info()
+			if err != nil {
+				return nil, err // 遇到错误直接返回，可根据需要改为跳过
+			}
+			if filter(info) {
+				result = append(result, entry)
+			}
+		}
+		return result, nil
+	}
+
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err // 遇到错误停止遍历
+		}
+		// 跳过根目录本身（通常不加入结果）
+		if path == dir {
+			return nil
+		}
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		if filter(info) {
+			result = append(result, d) // d 是 fs.DirEntry，可赋值给 os.DirEntry（类型别名）
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // checkPathNotContained returns an error if 'subpath' is inside 'path'

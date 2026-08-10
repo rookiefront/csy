@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -131,6 +132,10 @@ func (c *Cmd) Run(inputCmd []string) (string, error) {
 	go func() {
 		defer wg.Done()
 		scanner := bufio.NewScanner(c.Stdout)
+		buf := make([]byte, 64*1024)
+		scanner.Buffer(buf, 10*1024*1024)
+		// 使用 command 包导出的 ScanLinesOrCR
+		scanner.Split(ScanLinesOrCR)
 		for scanner.Scan() {
 			text := c.convCharset(scanner.Text())
 			if c.StreamStdinCB != nil {
@@ -143,6 +148,10 @@ func (c *Cmd) Run(inputCmd []string) (string, error) {
 	go func() {
 		defer wg.Done()
 		scanner := bufio.NewScanner(c.Stderr)
+		buf := make([]byte, 64*1024)
+		scanner.Buffer(buf, 10*1024*1024)
+		// 使用 command 包导出的 ScanLinesOrCR
+		scanner.Split(ScanLinesOrCR)
 		for scanner.Scan() {
 			text := c.convCharset(scanner.Text())
 			if c.StreamStderrCB != nil {
@@ -190,4 +199,30 @@ func (c *Cmd) Exit() {
 	if c.Origin != nil && c.Origin.Process != nil {
 		c.Origin.Process.Kill()
 	}
+}
+
+// ScanLinesOrCR 是一个自定义的 SplitFunc，兼容 \n, \r, 和 \r\n
+// 用于解决 git clone 等带有进度条的命令由于使用 \r 刷新同一行而导致日志阻塞的问题
+func ScanLinesOrCR(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	// 寻找 \r 或 \n
+	if i := bytes.IndexAny(data, "\r\n"); i >= 0 {
+		// 处理 Windows 风格的 \r\n
+		if data[i] == '\r' && i+1 < len(data) && data[i+1] == '\n' {
+			return i + 2, data[0:i], nil
+		}
+		// 遇到单独的 \r 或 \n
+		return i + 1, data[0:i], nil
+	}
+
+	// 如果到了 EOF，返回剩下的所有数据
+	if atEOF {
+		return len(data), data, nil
+	}
+
+	// 还需要更多数据
+	return 0, nil, nil
 }

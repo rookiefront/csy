@@ -1,4 +1,4 @@
-package constant
+package csy_constant
 
 import "time"
 

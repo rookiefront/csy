@@ -18,3 +18,12 @@ func SendFormData(url string, data map[string]string) (*resty.Response, error) {
 		Post(url)
 	return res, err
 }
+
+func SendJsonData(url string, data any) (*resty.Response, error) {
+	client := resty.New()
+	defer client.Close()
+	res, err := client.R().
+		SetBody(data).
+		Post(url)
+	return res, err
+}

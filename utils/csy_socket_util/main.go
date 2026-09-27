@@ -19,6 +19,7 @@ type Message struct {
 type SocketClient struct {
 	ID       string          // 用户标识（可为空）
 	Origin   string          // 客户端请求来源 Origin
+	Url   string          // 客户端请求来源 Origin
 	Conn     *websocket.Conn // 底层 WebSocket 连接
 	sendChan chan []byte     // 内部使用：待发送消息队列（私有化）
 	Mgr      *SocketManager  // 反向引用，用于操作
@@ -164,6 +165,7 @@ func (m *SocketManager) ServeWS(w http.ResponseWriter, r *http.Request, userID s
 
 	client := &SocketClient{
 		ID:       userID,
+		Url:   r.URL.String(), // 获取并保存来源 Origin
 		Origin:   r.Header.Get("Origin"), // 获取并保存来源 Origin
 		Conn:     conn,
 		sendChan: make(chan []byte, m.MessageBufSize),
